@@ -1,4 +1,5 @@
 # class imports
+from turtle import width
 from console_manager.console_manager import console_manager
 
 # module imports
@@ -9,7 +10,7 @@ import time
 import logging
 
 
-class feedback():
+class report():
 
     my_window = None
     root = None
@@ -17,7 +18,9 @@ class feedback():
 
     my_name = None
     my_email = None
+    my_options = None
     my_description = None
+
     my_pb = None
     my_text = None
     my_submit_btn = None
@@ -30,40 +33,56 @@ class feedback():
         self.root = root
         self.my_name = StringVar()
         self.my_email = StringVar()
+        self.my_options = StringVar()
 
     @classmethod
     def get_new_window(self):
         if (self.is_window_open == False):
             self.is_window_open = True
-            feedback_window = Toplevel(self.root)
-            feedback_window.title("Feedback")
-            feedback_window.resizable(False, False)
-            # feedback_window.geometry(self.config.get("APP","FEEDBACK_FRAME"))
+            report_window = Toplevel(self.root)
+            report_window.title("Report")
+            report_window.resizable(False, False)
+            # report_window.geometry(self.config.get("APP","FEEDBACK_FRAME"))
 
             title = Label(
-                feedback_window, text="Please let us know how you feel about this app.")
+                report_window, text="Please report any issues or bugs you encounter.")
             loading_text = Label(
-                feedback_window, text="Please wait...")
+                report_window, text="Please wait...")
 
-            L1 = Label(feedback_window, text="Name")
-            E1 = Entry(feedback_window, textvariable=self.my_name, width=40)
+            L1 = Label(report_window, text="Name")
+            E1 = Entry(report_window, textvariable=self.my_name, width=40)
 
-            L2 = Label(feedback_window, text="Email")
-            E2 = Entry(feedback_window, textvariable=self.my_email, width=40)
+            L2 = Label(report_window, text="Email")
+            E2 = Entry(report_window, textvariable=self.my_email, width=40)
 
-            L3 = Label(feedback_window, text="Description")
-            T1 = Text(feedback_window, width=30, height=10)
+            OPTIONS = [
+                "Bugs",
+                "Improvements",
+                "Code of Conduct"
+            ]
+            self.my_options.set("0")
+
+            R1 = OptionMenu(
+                report_window,
+                self.my_options,
+                "Select Report Type",
+                * OPTIONS
+            )
+            LR1 = Label(report_window, text="Report Type")
+
+            L3 = Label(report_window, text="Description")
+            T1 = Text(report_window, width=30, height=10)
 
             pb = Progressbar(
-                feedback_window,
+                report_window,
                 orient='horizontal',
                 mode='indeterminate',
             )
 
             submit_button = Button(
-                feedback_window, text="Submit", command=self.submit_button)
-            exit_button = Button(feedback_window, text="Exit",
-                                 command=lambda: self.on_x_pressed(feedback_window))
+                report_window, text="Submit", command=self.submit_button)
+            exit_button = Button(report_window, text="Exit",
+                                 command=lambda: self.on_x_pressed(report_window))
 
             title.grid(row=0, column=1, pady=10, padx=10)
 
@@ -73,13 +92,16 @@ class feedback():
             L2.grid(row=2, column=0, padx=10, sticky="ew")
             E2.grid(row=2, column=1, padx=10, sticky="ew")
 
-            L3.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
-            T1.grid(row=3, column=1, padx=10, pady=10, sticky="ew")
+            R1.grid(row=3, column=1, padx=10, pady=10, sticky="ew")
+            LR1.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+
+            L3.grid(row=4, column=0, padx=10, pady=10, sticky="ew")
+            T1.grid(row=4, column=1, padx=10, pady=10, sticky="ew")
 
             self.my_description = T1
 
-            submit_button.grid(row=4, column=1, pady=10)
-            exit_button.grid(row=4, column=0, pady=10)
+            submit_button.grid(row=5, column=1, pady=10)
+            exit_button.grid(row=5, column=0, pady=10)
 
             #pb.grid(column=1, row=5, padx=10, pady=20)
             #loading_text.grid(column=0, row=5, padx=10, pady=20)
@@ -89,10 +111,10 @@ class feedback():
             self.my_exit_btn = exit_button
             self.my_submit_btn = submit_button
 
-            feedback_window.protocol(
-                'WM_DELETE_WINDOW', lambda: self.on_x_pressed(feedback_window))
+            report_window.protocol(
+                'WM_DELETE_WINDOW', lambda: self.on_x_pressed(report_window))
 
-            return feedback_window
+            return report_window
 
     @classmethod
     def on_x_pressed(self, my_window):
@@ -101,11 +123,17 @@ class feedback():
             my_window.destroy()
 
     @classmethod
+    def radio_selection(self):
+        print(self.my_options.get())
+
+    @classmethod
     def submit_button(self):
         name = self.my_name.get()
         email = self.my_email.get()
         description = self.my_description.get("1.0", "end-1c")
-        if (name == "" or email == "" or description == ""):
+        report_type = self.my_options.get()
+
+        if (name == "" or email == "" or description == "" or report_type == "0"):
             console_manager.make_console_log(
                 "[user_interface][feedback] Error : Fields were left blank.", logging.ERROR)
             self.show_dialog(
@@ -119,6 +147,7 @@ class feedback():
             data_dictionary = {
                 "user_name": name,
                 "user_email": email,
+                "user_report": report_type,
                 "user_description": description
             }
             print(data_dictionary)

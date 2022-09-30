@@ -6,6 +6,9 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter.ttk import *
 import time
+from datetime import datetime
+import json
+import requests
 import logging
 
 
@@ -24,12 +27,15 @@ class feedback():
     my_exit_btn = None
     is_request_in_process = False
 
+    base_url = False
+
     @classmethod
     def __init__(self, config, root):
         self.config = config
         self.root = root
         self.my_name = StringVar()
         self.my_email = StringVar()
+        self.base_url = self.config.get("APP", "BASE_URL")
 
     @classmethod
     def get_new_window(self):
@@ -117,11 +123,41 @@ class feedback():
             self.my_text.grid(column=0, row=6, padx=2, pady=10, sticky="ew")
 
             data_dictionary = {
-                "user_name": name,
-                "user_email": email,
-                "user_description": description
+                "userFullName": name,
+                "userEmail": email,
+                "userDescription": description
             }
-            print(data_dictionary)
+            my_feedback_route = self.config.get("ROUTES", "SEND_FEEDBACK")
+            my_url = f"{self.base_url}{my_feedback_route}"
+
+            response = requests.post(url=my_url, json=data_dictionary, headers={
+                                     'Content-Type': 'application/json'})
+
+            response_dict = json.loads(response.text)
+
+            if (response_dict['success'] == True):
+                self.my_pb.grid_remove()
+                self.my_text.grid_remove()
+                self.show_dialog(
+                    "Success", f"{response_dict['status']}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.INFO)
+            else:
+                try:
+                    ERROR_LIST = response_dict['errors']
+                except Exception:
+                    ERROR_LIST = None
+                errors_string = ""
+                index = 1
+                if (ERROR_LIST is not None):
+                    for error in ERROR_LIST:
+                        errors_string = errors_string + \
+                            f"{index}. {error['msg']}\n"
+                        index += 1
+                self.my_pb.grid_remove()
+                self.my_text.grid_remove()
+                self.show_dialog(
+                    f"ERROR", f"{response_dict['status']}\n\n{errors_string}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.ERROR)
+
+            self.is_request_in_process = False
 
         self.is_request_in_process = False
 

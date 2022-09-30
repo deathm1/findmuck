@@ -7,6 +7,7 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter.ttk import *
 import time
+import requests
 import logging
 
 
@@ -145,10 +146,10 @@ class report():
             self.my_text.grid(column=0, row=6, padx=2, pady=10, sticky="ew")
 
             data_dictionary = {
-                "user_name": name,
-                "user_email": email,
-                "user_report": report_type,
-                "user_description": description
+                "userFullName": name,
+                "userEmail": email,
+                "userReportType": report_type,
+                "userDescription": description
             }
             print(data_dictionary)
 

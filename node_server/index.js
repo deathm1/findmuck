@@ -22,6 +22,8 @@ connectDB(config.DATABASE.CONNECTION_STRING).then(function (
     try {
       console.log("Launching Routes...");
       app.use("/api/sendFeedback", require("./routes/userRoutes/sendFeedback"));
+      app.use("/api/sendReport", require("./routes/userRoutes/sendReport"));
+
       console.log("All routes launched successfully.");
     } catch (error) {
       console.log(error);

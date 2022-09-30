@@ -166,7 +166,7 @@ class user_interface():
         path = f"./{folder_}"
         system = sys.platform
         if platform.system() == "Windows":
-            os.startfile(path)
+            os.startfile(f".\{folder_}")
         elif system == 'darwin':
             subprocess.check_call(['open', '--', path])
         elif system == 'linux2':

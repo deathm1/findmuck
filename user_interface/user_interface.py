@@ -150,6 +150,10 @@ class user_interface():
 
             logging_manager(
                 "App launched successfully.", logging.INFO, None, None)
+
+            ico = Image.open('user_interface/assets/rizwan.jpg')
+            photo = ImageTk.PhotoImage(ico)
+            root.wm_iconphoto(False, photo)
             root.mainloop()
 
         except Exception as e:
@@ -273,7 +277,7 @@ class user_interface():
                 label="Report", command=lambda: self.my_report_window.get_new_window())
             my_menu.add_cascade(label="Help", menu=help_menu)
             my_menu.add_command(label="About", command=lambda: self.show_dialog(
-                "About", "About message", logging.INFO))
+                "About", "Hi,\nThank you for using FindMuck, I hope you liked it. Please use the tool with discretion.\n\n-Aapka Shub Chintak", logging.INFO))
             logging_manager("Menu has been built.",
                             logging.INFO, None, None)
             return my_menu

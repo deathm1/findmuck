@@ -38,7 +38,7 @@ class user_interface():
                 "Launching App...", logging.INFO, None, None)
             self.config = config
             root = Tk()
-            root.config(menu=self.build_menu(root=root))
+            root.configure(menu=self.build_menu(root=root))
             self.victim_name = StringVar()
             self.dealy = StringVar()
             self.amount = StringVar()

@@ -130,34 +130,40 @@ class feedback():
             my_feedback_route = self.config.get("ROUTES", "SEND_FEEDBACK")
             my_url = f"{self.base_url}{my_feedback_route}"
 
-            response = requests.post(url=my_url, json=data_dictionary, headers={
-                                     'Content-Type': 'application/json'})
+            try:
 
-            response_dict = json.loads(response.text)
+                response = requests.post(url=my_url, json=data_dictionary, headers={
+                                        'Content-Type': 'application/json'})
 
-            if (response_dict['success'] == True):
+                response_dict = json.loads(response.text)
+
+                if (response_dict['success'] == True):
+                    self.my_pb.grid_remove()
+                    self.my_text.grid_remove()
+                    self.show_dialog(
+                        "Success", f"{response_dict['status']}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.INFO)
+                else:
+                    try:
+                        ERROR_LIST = response_dict['errors']
+                    except Exception:
+                        ERROR_LIST = None
+                    errors_string = ""
+                    index = 1
+                    if (ERROR_LIST is not None):
+                        for error in ERROR_LIST:
+                            errors_string = errors_string + \
+                                f"{index}. {error['msg']}\n"
+                            index += 1
+                    self.my_pb.grid_remove()
+                    self.my_text.grid_remove()
+                    self.show_dialog(
+                        f"ERROR", f"{response_dict['status']}\n\n{errors_string}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.ERROR)
+
+            except Exception as e:
                 self.my_pb.grid_remove()
                 self.my_text.grid_remove()
                 self.show_dialog(
-                    "Success", f"{response_dict['status']}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.INFO)
-            else:
-                try:
-                    ERROR_LIST = response_dict['errors']
-                except Exception:
-                    ERROR_LIST = None
-                errors_string = ""
-                index = 1
-                if (ERROR_LIST is not None):
-                    for error in ERROR_LIST:
-                        errors_string = errors_string + \
-                            f"{index}. {error['msg']}\n"
-                        index += 1
-                self.my_pb.grid_remove()
-                self.my_text.grid_remove()
-                self.show_dialog(
-                    f"ERROR", f"{response_dict['status']}\n\n{errors_string}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.ERROR)
-
-            self.is_request_in_process = False
+                        f"ERROR", f"Something went wrong.\nERROR : {e}", logging.ERROR)
 
         self.is_request_in_process = False
 

@@ -31,6 +31,8 @@ class report():
     my_exit_btn = None
     is_request_in_process = False
 
+    my_report_window = None
+
     base_url = False
 
     @classmethod
@@ -113,13 +115,18 @@ class report():
             #pb.grid(column=1, row=5, padx=10, pady=20)
             #loading_text.grid(column=0, row=5, padx=10, pady=20)
 
-            self.my_pb = pb
-            self.my_text = loading_text
-            self.my_exit_btn = exit_button
-            self.my_submit_btn = submit_button
+            # self.my_pb = pb
+            # self.my_text = loading_text
+            # self.my_exit_btn = exit_button
+            # self.my_submit_btn = submit_button
+
+            # self.my_pb.grid(column=1, row=6, padx=2, pady=10, sticky="ew")
+            # self.my_text.grid(column=0, row=6, padx=2, pady=10, sticky="ew")
 
             report_window.protocol(
                 'WM_DELETE_WINDOW', lambda: self.on_x_pressed(report_window))
+
+            self.my_report_window = report_window
 
             return report_window
 
@@ -147,9 +154,11 @@ class report():
                 "ERROR", "Please fill all the details.", logging.ERROR)
         else:
             self.is_request_in_process = True
-            self.my_pb.grid(column=1, row=6, padx=2, pady=10, sticky="ew")
-            self.my_pb.start()
-            self.my_text.grid(column=0, row=6, padx=2, pady=10, sticky="ew")
+            # self.my_pb.start()
+            # time.sleep(1)
+            # self.my_pb.destroy()
+            # self.my_report_window.config(cursor=)
+            self.root.config(cursor="watch")
 
             data_dictionary = {
                 "userFullName": name,
@@ -161,15 +170,14 @@ class report():
             my_url = f"{self.base_url}{my_report_route}"
 
             try:
-                time.sleep(1)
                 response = requests.post(url=my_url, json=data_dictionary, headers={
-                                        'Content-Type': 'application/json'})
+                    'Content-Type': 'application/json'})
 
                 response_dict = json.loads(response.text)
 
                 if (response_dict['success'] == True):
-                    self.my_pb.grid_remove()
-                    self.my_text.grid_remove()
+                    # self.my_pb.grid_remove()
+                    # self.my_text.grid_remove()
                     self.show_dialog(
                         "Success", f"{response_dict['status']}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.INFO)
                 else:
@@ -189,11 +197,12 @@ class report():
                     self.show_dialog(
                         f"ERROR", f"{response_dict['status']}\n\n{errors_string}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.ERROR)
             except Exception as e:
-                self.my_pb.grid_remove()
-                self.my_text.grid_remove()
+                # self.my_pb.grid_remove()
+                # self.my_text.grid_remove()
                 self.show_dialog(
-                        f"ERROR", f"Something went wrong.\nERROR : {e}", logging.ERROR)
-            
+                    f"ERROR", f"Something went wrong.\nERROR : {e}", logging.ERROR)
+
+            self.root.config(cursor="arrow")
             self.is_request_in_process = False
 
     @classmethod

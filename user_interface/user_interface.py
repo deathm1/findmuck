@@ -1,5 +1,6 @@
 # class imports
 import traceback
+from turtle import width
 from console_manager.console_manager import console_manager
 from user_interface.help_tab.feedback_window.feedback import feedback
 from user_interface.help_tab.report_window.report import report
@@ -13,9 +14,12 @@ import time
 import logging
 import json
 import sys
+from datetime import datetime
 import platform
 import os
+import requests
 import subprocess
+
 from tkinter.filedialog import askopenfile, asksaveasfile
 from PIL import ImageTk, Image
 
@@ -27,9 +31,14 @@ class user_interface():
     my_report_window = None
     is_feedback_open = False
 
+    victim_name_cc = None
     victim_name = None
     dealy = None
     amount = None
+
+    base_url = False
+
+    root = None
 
     @classmethod
     def __init__(self, config) -> None:
@@ -40,8 +49,10 @@ class user_interface():
             root = Tk()
             root.configure(menu=self.build_menu(root=root))
             self.victim_name = StringVar()
+            self.victim_name_cc = StringVar()
             self.dealy = StringVar()
             self.amount = StringVar()
+            self.base_url = self.config.get("APP", "BASE_URL")
 
             logging_manager(
                 "Launching Windows", logging.INFO, None, None)
@@ -67,15 +78,17 @@ class user_interface():
                 root, text="Victim Details", font=("Arial", 15))
 
             victim_label = Label(
-                root, text="Phone (India Only)")
+                root, text="Phone (India Only) 10 digit")
+            victim_Entry_cc = Entry(
+                root, textvariable=self.victim_name_cc, width=5)
             victim_Entry = Entry(root, textvariable=self.victim_name)
 
             dealy = Label(
-                root, text="Delay(0-200s)")
+                root, text="Delay(3-15s)")
             delay_Entry = Entry(root, textvariable=self.dealy)
 
             amount = Label(
-                root, text="Amount (0-150)")
+                root, text="Amount (1-200)")
             amount_Entry = Entry(root, textvariable=self.amount)
 
             submit_button = Button(root, text="Attack",
@@ -120,6 +133,14 @@ class user_interface():
                 padx=10,
                 pady=10,
             )
+
+            # victim_Entry_cc.grid(
+            #     row=3,
+            #     column=1,
+            #     sticky="ew",
+            #     pady=10,
+            #     padx=10,
+            # )
             victim_Entry.grid(
                 row=3,
                 column=1,
@@ -154,6 +175,7 @@ class user_interface():
             ico = Image.open('user_interface/assets/rizwan.jpg')
             photo = ImageTk.PhotoImage(ico)
             root.wm_iconphoto(False, photo)
+            self.root = root
             root.mainloop()
 
         except Exception as e:
@@ -193,12 +215,51 @@ class user_interface():
                 logging_manager(
                     "Incomplete details.", logging.WARN, None, None)
             else:
-                my_dict = {
-                    "phone_number": phone_number,
-                    "sms_delay": sms_delay,
-                    "sms_amount": sms_amount
+                self.root.config(cursor="watch")
+                data_dictionary = {
+                    "countryCode": int(self.config.get("APP", "COUNTRY_CODE")),
+                    "phoneNumber": phone_number,
+                    "delay": sms_delay,
+                    "amount": sms_amount
                 }
-                print(my_dict)
+
+                my_feedback_route = self.config.get("ROUTES", "ATTACK_VICTIM")
+                my_url = f"{self.base_url}{my_feedback_route}"
+
+            try:
+
+                response = requests.post(url=my_url, json=data_dictionary, headers={
+                    'Content-Type': 'application/json'})
+
+                response_dict = json.loads(response.text)
+
+                if (response_dict['success'] == True):
+                    self.root.config(cursor="arrow")
+                    self.show_dialog(
+                        "Success", f"{response_dict['status']}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.INFO)
+                else:
+                    self.root.config(cursor="arrow")
+                    try:
+                        ERROR_LIST = response_dict['errors']
+                    except Exception:
+                        ERROR_LIST = None
+                    errors_string = ""
+                    index = 1
+                    if (ERROR_LIST is not None):
+                        for error in ERROR_LIST:
+                            errors_string = errors_string + \
+                                f"{index}. {error['msg']}\n"
+                            index += 1
+                    self.show_dialog(
+                        f"ERROR", f"{response_dict['status']}\n\n{errors_string}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.ERROR)
+
+            except Exception as e:
+                # self.my_pb.grid_remove()
+                # self.my_text.grid_remove()
+                self.show_dialog(
+                    f"ERROR", f"Something went wrong.\nERROR : {e}", logging.ERROR)
+
+            self.root.config(cursor="arrow")
         except Exception as e:
             logging_manager(
                 "Something went wrong while initiating attacking victim.", logging.ERROR, e, traceback)

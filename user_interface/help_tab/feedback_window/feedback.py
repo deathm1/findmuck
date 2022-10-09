@@ -118,9 +118,11 @@ class feedback():
                 "ERROR", "Please fill all the details.", logging.ERROR)
         else:
             self.is_request_in_process = True
-            self.my_pb.grid(column=1, row=6, padx=2, pady=10, sticky="ew")
-            self.my_pb.start()
-            self.my_text.grid(column=0, row=6, padx=2, pady=10, sticky="ew")
+            # self.my_pb.grid(column=1, row=6, padx=2, pady=10, sticky="ew")
+            # self.my_pb.start()
+            # self.my_text.grid(column=0, row=6, padx=2, pady=10, sticky="ew")
+
+            self.root.config(cursor="watch")
 
             data_dictionary = {
                 "userFullName": name,
@@ -133,7 +135,7 @@ class feedback():
             try:
 
                 response = requests.post(url=my_url, json=data_dictionary, headers={
-                                        'Content-Type': 'application/json'})
+                    'Content-Type': 'application/json'})
 
                 response_dict = json.loads(response.text)
 
@@ -160,11 +162,12 @@ class feedback():
                         f"ERROR", f"{response_dict['status']}\n\n{errors_string}\nServer Time : {datetime.fromtimestamp(response_dict['timestamp']/1000)}", logging.ERROR)
 
             except Exception as e:
-                self.my_pb.grid_remove()
-                self.my_text.grid_remove()
+                # self.my_pb.grid_remove()
+                # self.my_text.grid_remove()
                 self.show_dialog(
-                        f"ERROR", f"Something went wrong.\nERROR : {e}", logging.ERROR)
+                    f"ERROR", f"Something went wrong.\nERROR : {e}", logging.ERROR)
 
+        self.root.config(cursor="arrow")
         self.is_request_in_process = False
 
     @classmethod
